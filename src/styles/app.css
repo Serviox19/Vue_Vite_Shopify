@@ -1,0 +1,70 @@
+/**
+ * Tailwind CSS v4 imports and custom styles
+ * Using @source to specify content paths
+ */
+
+@import 'tailwindcss';
+
+/* Specify content sources for Tailwind v4 */
+@source '../../shopify/**/*.liquid';
+@source '../../src/**/*.{vue,js}';
+
+/* Tailwind layers */
+@layer base {
+  /* Light normalize/reset - friendly to Shopify themes */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Preserve Shopify's default body styles where possible */
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  /* Custom component styles */
+  .vue-component-wrapper {
+    @apply tw-relative;
+  }
+
+  /* Add custom component classes here with tw- prefix */
+}
+
+@layer utilities {
+  /* Custom utility classes */
+  .tw-safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Global custom styles (non-Tailwind) */
+[v-cloak] {
+  display: none;
+}
+
+/* Smooth transitions for Vue components */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
