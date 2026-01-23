@@ -8,6 +8,7 @@ dist/
 shopify/assets/main.js
 shopify/assets/main.css
 shopify/assets/*.map
+shopify/assets/.vite/
 
 # Note: /shopify folder is source theme files (tracked in git)
 # /dist folder contains built theme for production (untracked)
@@ -40,6 +41,9 @@ pnpm-debug.log*
 # Shopify
 .shopify
 config.yml
+
+# Auto-generated section group files (settings get updated by theme editor)
+shopify/sections/*-group.json
 
 # OS
 .DS_Store
