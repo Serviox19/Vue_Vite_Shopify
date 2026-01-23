@@ -1,13 +1,10 @@
 /**
- * Tailwind CSS v4 imports and custom styles
- * Using @source to specify content paths
+ * Tailwind CSS v3 imports and custom styles
  */
 
-@import 'tailwindcss';
-
-/* Specify content sources for Tailwind v4 */
-@source '../../shopify/**/*.liquid';
-@source '../../src/**/*.{vue,js}';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Tailwind layers */
 @layer base {
