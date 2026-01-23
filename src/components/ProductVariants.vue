@@ -50,27 +50,27 @@ watch(() => props.selectedVariantId, (newId) => {
 </script>
 
 <template>
-  <div class="tw-space-y-4">
+  <div class="space-y-4">
     <!-- Options selector -->
     <div
       v-for="option in product.options"
       :key="option.name"
-      class="tw-space-y-2"
+      class="space-y-2"
     >
-      <label class="tw-block tw-font-medium tw-text-sm">
+      <label class="block font-medium text-sm">
         {{ option.name }}
       </label>
 
-      <div class="tw-flex tw-flex-wrap tw-gap-2">
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="value in option.values"
           :key="value"
           @click="selectVariant(findVariantByOption(option.name, value))"
           :class="[
-            'tw-px-4 tw-py-2 tw-border tw-rounded-md tw-transition-colors',
+            'px-4 py-2 border rounded-md transition-colors',
             isOptionSelected(option.name, value)
-              ? 'tw-border-black tw-bg-black tw-text-white'
-              : 'tw-border-gray-300 hover:tw-border-gray-400'
+              ? 'border-black bg-black text-white'
+              : 'border-gray-300 hover:border-gray-400'
           ]"
         >
           {{ value }}
@@ -79,14 +79,14 @@ watch(() => props.selectedVariantId, (newId) => {
     </div>
 
     <!-- Price display -->
-    <div class="tw-text-2xl tw-font-bold">
+    <div class="text-2xl font-bold">
       {{ variantPrice }}
     </div>
 
     <!-- Availability -->
     <div
       v-if="!isAvailable"
-      class="tw-text-red-600 tw-text-sm tw-font-medium"
+      class="text-red-600 text-sm font-medium"
     >
       Out of Stock
     </div>

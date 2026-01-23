@@ -1,9 +1,9 @@
 # Shopify CLI configuration
-# Theme files are located in the ./shopify directory
+# Built theme files are in ./dist directory
 
 [theme]
-root = "shopify"
+root = "dist"
 
-# Optional: specify your store for development
-# [environments.development]
-# store = "your-store.myshopify.com"
+# Configure your store for development
+[environments.development]
+store = "merceitt-development.myshopify.com"

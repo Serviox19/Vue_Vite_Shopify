@@ -54,11 +54,11 @@ async function handleAddToCart() {
 </script>
 
 <template>
-  <div class="tw-space-y-2">
+  <div class="space-y-2">
     <button
       @click="handleAddToCart"
       :disabled="isAdding"
-      class="tw-w-full tw-bg-black tw-text-white tw-px-6 tw-py-3 tw-rounded-md tw-font-medium tw-transition-opacity hover:tw-opacity-90 disabled:tw-opacity-50 disabled:tw-cursor-not-allowed"
+      class="w-full bg-black text-white px-6 py-3 rounded-md font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <span v-if="!isAdding && !success">{{ buttonText }}</span>
       <span v-else-if="isAdding">Adding...</span>
@@ -67,7 +67,7 @@ async function handleAddToCart() {
 
     <div
       v-if="error"
-      class="tw-text-red-600 tw-text-sm tw-text-center"
+      class="text-red-600 text-sm text-center"
       role="alert"
     >
       {{ error }}

@@ -5,17 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "prebuild": "rm -rf dist && cp -r shopify dist",
+    "build": "npm run prebuild && vite build",
     "preview": "vite preview",
-    "shopify:dev": "shopify theme dev --path=shopify",
-    "shopify:push": "shopify theme push --path=shopify",
+    "shopify:dev": "shopify theme dev --store=merceitt-development.myshopify.com --path=shopify",
     "shopify:pull": "shopify theme pull --path=shopify",
-    "deploy": "npm run build && shopify theme push --path=shopify"
+    "deploy": "npm run build && shopify theme push --path=dist"
   },
   "dependencies": {
     "vue": "^3.4.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

@@ -1,12 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Use tw- prefix to avoid conflicts with Shopify/Dawn classes
-  prefix: 'tw-',
-
   content: [
     './shopify/**/*.liquid',
     './shopify/**/*.json',
     './src/**/*.{vue,js,ts}',
+    // Note: We scan source files, not dist/
   ],
 
   theme: {

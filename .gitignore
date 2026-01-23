@@ -9,7 +9,9 @@ shopify/assets/main.js
 shopify/assets/main.css
 shopify/assets/*.map
 
-# Note: /shopify folder contains user's theme - keep everything except built files above
+# Note: /shopify folder is source theme files (tracked in git)
+# /dist folder contains built theme for production (untracked)
+# Built assets (main.js, main.css) in /shopify/assets are also untracked
 
 # Environment variables
 .env

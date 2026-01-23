@@ -40,15 +40,15 @@
 @layer components {
   /* Custom component styles */
   .vue-component-wrapper {
-    @apply tw-relative;
+    @apply relative;
   }
 
-  /* Add custom component classes here with tw- prefix */
+  /* Add custom component classes here */
 }
 
 @layer utilities {
   /* Custom utility classes */
-  .tw-safe-area-inset-top {
+  .safe-area-inset-top {
     padding-top: env(safe-area-inset-top);
   }
 }
