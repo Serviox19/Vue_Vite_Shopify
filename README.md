@@ -135,21 +135,32 @@ If you need to avoid conflicts with existing theme styles, add `prefix: 'tw-'` t
 Mount Vue components using `data-vue-mount`:
 
 ```liquid
+<!-- Add to Cart Component -->
 <div
   data-vue-mount="add-to-cart"
-  data-props='{"productId": {{ product.id }}, "variantId": {{ variant.id }}}'
+  data-props='{"productId": {{ product.id }}, "variantId": {{ variant.id }}, "buttonText": "Add to Cart"}'
 >
   <!-- Fallback content if JS disabled -->
+  <button>Add to Cart</button>
+</div>
+
+<!-- Product Variants Component -->
+<div
+  data-vue-mount="product-variants"
+  data-props='{"product": {{ product | json }}, "selectedVariantId": {{ product.variants.first.id }}}'
+>
+  <!-- Fallback content -->
+  <select>
+    {% for variant in product.variants %}
+      <option value="{{ variant.id }}">{{ variant.title }}</option>
+    {% endfor %}
+  </select>
 </div>
 ```
 
-Or use the helper snippet:
-```liquid
-{% render 'vue-mount-snippet',
-  component: 'add-to-cart',
-  props: product_json
-%}
-```
+**Available Components:**
+- `add-to-cart` - Product add-to-cart button with loading states
+- `product-variants` - Product variant selector with option buttons
 
 ### Passing Shopify data to Vue
 

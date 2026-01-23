@@ -34,6 +34,6 @@
 
     {% sections 'footer-group' %}
 
-    <script src="{{ 'main.js' | asset_url }}" defer></script>
+    {% render 'vite-tag', vite-tag: 'main.js' %}
   </body>
 </html>
