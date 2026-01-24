@@ -13,7 +13,6 @@
         class="slide"
       >
         <div class="slide-content">
-          <h2 class="slide-title">{{ slide.title }}</h2>
           <p class="slide-description">{{ slide.description }}</p>
         </div>
       </div>
@@ -40,17 +39,6 @@
         <path d="M9 18l6-6-6-6"/>
       </svg>
     </button>
-
-    <!-- Slide Indicators -->
-    <div v-if="showIndicators" class="slider-indicators">
-      <button
-        v-for="(slide, index) in slides"
-        :key="index"
-        :class="['indicator', { active: index === currentSlide }]"
-        @click="goToSlide(index)"
-        :aria-label="`Go to slide ${index + 1}`"
-      ></button>
-    </div>
   </div>
   <div v-else class="no-slides">
     No slides configured
@@ -72,10 +60,6 @@
     autoplayInterval: {
       type: Number,
       default: 5000,
-    },
-    showIndicators: {
-      type: Boolean,
-      default: true,
     },
   });
 
@@ -179,19 +163,13 @@
 </script>
 
 <style scoped>
-.header-slider {
-  width: 100%;
-  position: relative;
-  margin: 0;
-  padding: 0;
-}
-
 .slider-wrapper {
   position: relative;
   width: 100%;
   overflow: hidden;
   border-radius: 0;
   box-shadow: none;
+  background: #F6F6F7;
 }
 
 .slider-track {
@@ -322,12 +300,11 @@
 
 /* No Slides Message */
 .no-slides {
-  padding: 3rem;
+  padding: 0.5rem 1rem;
   text-align: center;
   color: #999;
   font-style: italic;
   background: #f5f5f5;
-  border-radius: 8px;
 }
 
 /* Responsive Design */
