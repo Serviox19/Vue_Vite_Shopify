@@ -1,13 +1,19 @@
 <header class="flex flex-col w-full">
   <div class="w-full" data-vue-mount="header-slider" data-props='{"slides": {{ section.blocks | map: "settings" | json }}, "autoplay": {{ section.settings.slider_autoplay | json }}, "showIndicators": {{ section.settings.slider_show_indicators | json }}}'></div>
   <div class="header__container w-full flex justify-between items-center py-4 px-2 md:px-0">
-    <button class="header__menu-toggle" aria-label="Toggle menu" onclick="const menu = document.querySelector('.header__menu'); const isOpen = menu.classList.toggle('is-open'); document.body.style.overflow = isOpen ? 'hidden' : '';">
+    <button 
+      class="header__menu-toggle" 
+      aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="header-menu"
+      id="header-menu-toggle"
+    >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 12h18M3 6h18M3 18h18"/>
       </svg>
     </button>
 
-    <h2 class="header__title text-2xl font-bold text-white">
+    <div class="header__title text-2xl font-bold text-white">
       {% if section.settings.logo %}
         <a href="{{ routes.root_url }}">
           <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="{{ shop.name }}" class="header-logo" width="200" height="200" loading="lazy">
@@ -15,25 +21,26 @@
       {% else %}
         {{ shop.name | link_to: routes.root_url }}
       {% endif %}
-    </h2>
-
-    <div class="header__menu">
-      {% for link in section.settings.menu.links %}
-        {{ link.title | link_to: link.url }}
-      {% endfor %}
     </div>
+
+    <nav class="header__menu" id="header-menu" role="navigation" aria-label="Main navigation">
+      {% if section.settings.menu and section.settings.menu.links %}
+        {% for link in section.settings.menu.links %}
+          {{ link.title | link_to: link.url }}
+        {% endfor %}
+      {% endif %}
+    </nav>
 
     <div class="header__icons">
       {% if shop.customer_accounts_enabled %}
         {{ 'icon-account.svg' | inline_asset_content | link_to: routes.account_url }}
       {% endif %}
 
-      <a href="{{ routes.cart_url }}">
-        {% if cart.item_count > 0 %}
-          <sup>{{ cart.item_count }}</sup>
-        {% endif %}
-
+      <a href="{{ routes.cart_url }}" class="header__cart-link" aria-label="Cart">
         {{ 'icon-cart.svg' | inline_asset_content }}
+        {% if cart.item_count > 0 %}
+          <span class="header__cart-count" aria-label="{{ cart.item_count }} items in cart">{{ cart.item_count }}</span>
+        {% endif %}
       </a>
     </div>
   </div>
@@ -51,12 +58,31 @@
     text-decoration: none;
     color: var(--color-foreground);
   }
-  header a sup {
-    position: absolute;
-    left: 100%;
-    overflow: hidden;
-    max-width: var(--page-margin);
+  
+  .header__cart-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
   }
+  
+  .header__cart-count {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    background: var(--color-foreground, #000);
+    color: var(--color-background, #fff);
+    border-radius: 50%;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0 0.25rem;
+    line-height: 1;
+  }
+  
   header .header-logo {
     height: auto;
     max-height: 3rem;
@@ -132,12 +158,19 @@
       display: none;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       z-index: 100;
+      width: 0;
+      opacity: 0;
+      height: 100dvh;
+      transform: translateX(-100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
     }
 
     header .header__menu.is-open {
       display: flex;
-      transition: opacity 0.3s ease;
-      height: 100dvh;
+      width: 100%;
+      opacity: 1;
+      transform: translateX(0);
       overflow-y: auto;
     }
 
@@ -163,6 +196,20 @@
     }
   }
 {% endstylesheet %}
+
+<script>
+  (function() {
+    const menuToggle = document.getElementById('header-menu-toggle');
+    const menu = document.getElementById('header-menu');
+    
+    if (!menuToggle || !menu) return;
+    
+    menuToggle.addEventListener('click', function() {
+      const isOpen = menu.classList.toggle('is-open');
+      menuToggle.setAttribute('aria-expanded', isOpen);
+    });
+  })();
+</script>
 
 {% schema %}
 {
@@ -193,7 +240,7 @@
       "id": "slider_show_indicators",
       "label": "Show slide indicators",
       "default": false
-    },
+    }
   ],
   "blocks": [
     {

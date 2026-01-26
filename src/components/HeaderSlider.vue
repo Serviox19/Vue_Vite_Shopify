@@ -1,44 +1,20 @@
 <template>
-  <div class="slider-wrapper" v-if="slides && slides.length > 0">
-    <div
-      class="slider-track"
-      :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
-      @touchstart="handleTouchStart"
-      @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd"
+  <div v-if="slides && slides.length > 0" class="slider-wrapper">
+    <Swiper
+      :modules="modules"
+      :slides-per-view="1"
+      :loop="slides.length > 1"
+      :autoplay="autoplay ? { delay: 5000, disableOnInteraction: false } : false"
+      :navigation="true"
+      :pagination="showIndicators ? { clickable: true } : false"
+      class="header-swiper"
     >
-      <div
-        v-for="(slide, index) in slides"
-        :key="index"
-        class="slide"
-      >
+      <SwiperSlide v-for="(slide, index) in slides" :key="index" class="slide">
         <div class="slide-content">
           <p class="slide-description">{{ slide.description }}</p>
         </div>
-      </div>
-    </div>
-
-    <!-- Navigation Buttons -->
-    <button
-      class="slider-nav slider-nav-prev"
-      @click="prevSlide"
-      :disabled="currentSlide === 0"
-      aria-label="Previous slide"
-    >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
-    <button
-      class="slider-nav slider-nav-next"
-      @click="nextSlide"
-      :disabled="currentSlide === slides.length - 1"
-      aria-label="Next slide"
-    >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
+      </SwiperSlide>
+    </Swiper>
   </div>
   <div v-else class="no-slides">
     No slides configured
@@ -46,7 +22,11 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { Swiper, SwiperSlide } from 'swiper/vue';
+  import { Navigation, Autoplay, Pagination } from 'swiper/modules';
+  import 'swiper/css';
+  import 'swiper/css/navigation';
+  import 'swiper/css/pagination';
 
   const props = defineProps({
     slides: {
@@ -57,132 +37,27 @@
       type: Boolean,
       default: true,
     },
-    autoplayInterval: {
-      type: Number,
-      default: 5000,
+    showIndicators: {
+      type: Boolean,
+      default: false,
     },
   });
 
-  const currentSlide = ref(0);
-  let autoplayTimer = null;
-  let touchStartX = 0;
-  let touchEndX = 0;
-
-  const nextSlide = () => {
-    if (currentSlide.value < props.slides.length - 1) {
-      currentSlide.value++;
-    } else {
-      currentSlide.value = 0; // Loop back to start
-    }
-    resetAutoplay();
-  };
-
-  const prevSlide = () => {
-    if (currentSlide.value > 0) {
-      currentSlide.value--;
-    } else {
-      currentSlide.value = props.slides.length - 1; // Loop to end
-    }
-    resetAutoplay();
-  };
-
-  const goToSlide = (index) => {
-    if (index >= 0 && index < props.slides.length) {
-      currentSlide.value = index;
-      resetAutoplay();
-    }
-  };
-
-  const startAutoplay = () => {
-    if (props.autoplay && props.slides.length > 1) {
-      autoplayTimer = setInterval(() => {
-        nextSlide();
-      }, props.autoplayInterval);
-    }
-  };
-
-  const stopAutoplay = () => {
-    if (autoplayTimer) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = null;
-    }
-  };
-
-  const resetAutoplay = () => {
-    stopAutoplay();
-    startAutoplay();
-  };
-
-  const handleTouchStart = (e) => {
-    touchStartX = e.touches[0].clientX;
-    stopAutoplay();
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-
-    const diff = touchStartX - touchEndX;
-    const minSwipeDistance = 50;
-
-    if (Math.abs(diff) > minSwipeDistance) {
-      if (diff > 0) {
-        // Swipe left - next slide
-        nextSlide();
-      } else {
-        // Swipe right - previous slide
-        prevSlide();
-      }
-    }
-
-    touchStartX = 0;
-    touchEndX = 0;
-    startAutoplay();
-  };
-
-  const handleKeydown = (e) => {
-    if (e.key === 'ArrowLeft') {
-      prevSlide();
-    } else if (e.key === 'ArrowRight') {
-      nextSlide();
-    }
-  };
-
-  onMounted(() => {
-    startAutoplay();
-    window.addEventListener('keydown', handleKeydown);
-  });
-
-  onUnmounted(() => {
-    stopAutoplay();
-    window.removeEventListener('keydown', handleKeydown);
-  });
+  const modules = [Navigation, Autoplay, Pagination];
 </script>
 
 <style scoped>
 .slider-wrapper {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  border-radius: 0;
-  box-shadow: none;
   background: #F6F6F7;
 }
 
-.slider-track {
-  display: flex;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+.header-swiper {
+  width: 100%;
 }
 
 .slide {
-  min-width: 100%;
-  width: 100%;
-  flex-shrink: 0;
-  position: relative;
   padding: 0 1rem;
   display: flex;
   align-items: center;
@@ -194,20 +69,11 @@
 .slide-content {
   max-width: 100%;
   color: var(--color-black);
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
   justify-content: center;
-}
-
-.slide-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin: 0;
-  line-height: 1.4;
 }
 
 .slide-description {
@@ -216,89 +82,61 @@
   line-height: 1.4;
 }
 
-/* Navigation Buttons */
-.slider-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  border: none;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 50%;
-  z-index: 10;
+/* Swiper Navigation Buttons */
+:deep(.swiper-button-next),
+:deep(.swiper-button-prev) {
+  width: 20px;
+  height: 20px;
   color: #333;
-  padding: 0;
+  background: transparent;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
 }
 
-.slider-nav svg {
-  width: 16px;
-  height: 16px;
+:deep(.swiper-button-next::after),
+:deep(.swiper-button-prev::after) {
+  font-size: 16px;
 }
 
-.slider-nav:hover:not(:disabled) {
-  background: white;
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
+:deep(.swiper-button-next:hover),
+:deep(.swiper-button-prev:hover) {}
 
-.slider-nav:active:not(:disabled) {
-  transform: translateY(-50%) scale(0.95);
-}
-
-.slider-nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.slider-nav-prev {
+:deep(.swiper-button-prev) {
   left: 0.5rem;
 }
 
-.slider-nav-next {
+:deep(.swiper-button-next) {
   right: 0.5rem;
 }
 
-/* Slide Indicators */
-.slider-indicators {
-  position: absolute;
+/* Swiper Pagination */
+:deep(.swiper-pagination) {
   bottom: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.375rem;
-  z-index: 10;
 }
 
-.indicator {
+:deep(.swiper-pagination-bullet) {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.3);
-  cursor: pointer;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;
-  padding: 0;
-  margin: 0;
 }
 
-.indicator:hover {
-  background: rgba(255, 255, 255, 0.6);
+:deep(.swiper-pagination-bullet:hover) {
+  background: rgba(0, 0, 0, 0.6);
   transform: scale(1.3);
 }
 
-.indicator.active {
-  background: white;
-  border-color: white;
+:deep(.swiper-pagination-bullet-active) {
+  background: #000;
+  border-color: #000;
   width: 20px;
   border-radius: 3px;
 }
 
-/* No Slides Message */
 .no-slides {
   padding: 0.5rem 1rem;
   text-align: center;
@@ -314,37 +152,30 @@
     min-height: 50px;
   }
 
-  .slide-content {
-    gap: 0.75rem;
-  }
-
-  .slide-title {
-    font-size: 0.8125rem;
-  }
-
   .slide-description {
     font-size: 0.8125rem;
   }
 
-  .slider-nav {
+  :deep(.swiper-button-next),
+  :deep(.swiper-button-prev) {
     width: 24px;
     height: 24px;
   }
 
-  .slider-nav svg {
-    width: 20px;
-    height: 20px;
+  :deep(.swiper-button-next::after),
+  :deep(.swiper-button-prev::after) {
+    font-size: 14px;
   }
 
-  .slider-nav-prev {
+  :deep(.swiper-button-prev) {
     left: 0.25rem;
   }
 
-  .slider-nav-next {
+  :deep(.swiper-button-next) {
     right: 0.25rem;
   }
 
-  .slider-indicators {
+  :deep(.swiper-pagination) {
     bottom: 0.375rem;
   }
 }
@@ -357,25 +188,21 @@
 
   .slide-content {
     gap: 0.5rem;
-    flex-direction: column;
-  }
-
-  .slide-title {
-    font-size: 0.75rem;
   }
 
   .slide-description {
     font-size: 0.75rem;
   }
 
-  .slider-nav {
+  :deep(.swiper-button-next),
+  :deep(.swiper-button-prev) {
     width: 20px;
     height: 20px;
   }
 
-  .slider-nav svg {
-    width: 16px;
-    height: 16px;
+  :deep(.swiper-button-next::after),
+  :deep(.swiper-button-prev::after) {
+    font-size: 12px;
   }
 }
 </style>
