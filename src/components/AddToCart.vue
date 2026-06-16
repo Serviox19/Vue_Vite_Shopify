@@ -1,6 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { addToCart } from '@utils/shopify-cart';
+import { useCart } from '@/stores/cart.js';
+
+const { add, openDrawer } = useCart();
 
 const props = defineProps({
   productId: {
@@ -31,16 +33,15 @@ async function handleAddToCart() {
   success.value = false;
 
   try {
-    const cart = await addToCart({
+    // Update the shared cart store, then reveal the drawer. Every island bound
+    // to the store (header badge, drawer) reacts automatically.
+    await add({
       id: selectedVariantId.value,
       quantity: 1,
     });
 
     success.value = true;
-
-    // Dispatch custom event for cart updates. Pass the fresh cart so listeners
-    // (e.g. SideCart) can render without an extra /cart.js fetch.
-    window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart } }));
+    openDrawer();
 
     // Reset success state after 2 seconds
     setTimeout(() => {
@@ -57,6 +58,7 @@ async function handleAddToCart() {
 <template>
   <div class="space-y-2">
     <button
+      type="button"
       @click="handleAddToCart"
       :disabled="isAdding"
       class="w-full bg-black text-white px-6 py-3 rounded-md font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"

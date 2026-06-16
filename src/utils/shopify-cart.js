@@ -57,46 +57,15 @@ export async function updateCart(key, quantity) {
  * @returns {Promise<Object>} Cart data
  */
 export async function getCart() {
-  const response = await fetch('/cart.js');
+  // `cache: 'no-store'` bypasses the browser HTTP cache. Without it, a GET to
+  // /cart.js right after a POST to /cart/add.js can be served from memory cache
+  // and return the *pre-add* cart, so the count/drawer don't refresh until a
+  // full page reload forces revalidation.
+  const response = await fetch('/cart.js', { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error('Failed to fetch cart');
   }
 
   return response.json();
-}
-
-/**
- * Clear all items from cart
- * @returns {Promise<Object>} Empty cart data
- */
-export async function clearCart() {
-  const response = await fetch('/cart/clear.js', {
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to clear cart');
-  }
-
-  return response.json();
-}
-
-/**
- * Get product recommendations
- * @param {String|Number} productId - Product ID
- * @param {Number} limit - Number of recommendations (default: 4)
- * @returns {Promise<Array>} Array of recommended products
- */
-export async function getProductRecommendations(productId, limit = 4) {
-  const response = await fetch(
-    `/recommendations/products.json?product_id=${productId}&limit=${limit}`
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recommendations');
-  }
-
-  const data = await response.json();
-  return data.products || [];
 }

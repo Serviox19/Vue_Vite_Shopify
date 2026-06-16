@@ -16,32 +16,43 @@
   {% paginate collection.products by 20 %}
     <div class="collection-products">
       {% for product in collection.products %}
-        <a href="{{ product.url }}" class="collection-product">
-          {% if product.featured_image %}
-            {% render 'image',
-              class: 'collection-product__image',
-              image: product.featured_image,
-              width: 400,
-              height: 400,
-              crop: 'center'
-            %}
-          {% else %}
-            <div class="collection-product__image collection-product__image--placeholder">
-              {{ 'product-1' | placeholder_svg_tag }}
+        <div class="collection-product">
+          <a href="{{ product.url }}" class="collection-product__link">
+            {% if product.featured_image %}
+              {% render 'image',
+                class: 'collection-product__image',
+                image: product.featured_image,
+                width: 400,
+                height: 400,
+                crop: 'center'
+              %}
+            {% else %}
+              <div class="collection-product__image collection-product__image--placeholder">
+                {{ 'product-1' | placeholder_svg_tag }}
+              </div>
+            {% endif %}
+            <div class="collection-product__content">
+              <p class="collection-product__title">{{ product.title | escape }}</p>
+              <p class="collection-product__price">
+                {% if product.compare_at_price > product.price %}
+                  <span class="collection-product__price--sale">{{ product.price | money }}</span>
+                  <s class="collection-product__price--was">{{ product.compare_at_price | money }}</s>
+                {% else %}
+                  {{ product.price | money }}
+                {% endif %}
+              </p>
             </div>
+          </a>
+
+          {% comment %} Vue add-to-cart island — adds the first available variant via the shared cart store {% endcomment %}
+          {% if product.available %}
+            <div
+              class="collection-product__atc"
+              data-vue-mount="add-to-cart"
+              data-props='{"productId": {{ product.id | json }}, "variantId": {{ product.selected_or_first_available_variant.id | json }}, "buttonText": "Add to cart"}'
+            ></div>
           {% endif %}
-          <div class="collection-product__content">
-            <p class="collection-product__title">{{ product.title | escape }}</p>
-            <p class="collection-product__price">
-              {% if product.compare_at_price > product.price %}
-                <span class="collection-product__price--sale">{{ product.price | money }}</span>
-                <s class="collection-product__price--was">{{ product.compare_at_price | money }}</s>
-              {% else %}
-                {{ product.price | money }}
-              {% endif %}
-            </p>
-          </div>
-        </a>
+        </div>
       {% else %}
         <p class="collection__empty">No products found in this collection.</p>
       {% endfor %}
@@ -87,8 +98,17 @@
   .collection-product {
     display: flex;
     flex-direction: column;
+  }
+
+  .collection-product__link {
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
     color: var(--color-foreground);
+  }
+
+  .collection-product__atc {
+    margin-top: 0.75rem;
   }
 
   .collection-product .collection-product__image {

@@ -38,9 +38,12 @@
 
       <a href="{{ routes.cart_url }}" class="header__cart-link" aria-label="Cart">
         {{ 'icon-cart.svg' | inline_asset_content }}
-        {% if cart.item_count > 0 %}
-          <span class="header__cart-count" aria-label="{{ cart.item_count }} items in cart">{{ cart.item_count }}</span>
-        {% endif %}
+        {% # CartCount.vue (bound to the shared cart store) replaces this on mount; the server-rendered badge inside is the no-flash initial content %}
+        <span data-vue-mount="cart-count">
+          {% if cart.item_count > 0 %}
+            <span class="header__cart-count" aria-label="{{ cart.item_count }} items in cart">{{ cart.item_count }}</span>
+          {% endif %}
+        </span>
       </a>
     </div>
   </div>

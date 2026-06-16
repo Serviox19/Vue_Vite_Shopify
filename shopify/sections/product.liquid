@@ -88,14 +88,25 @@
         >
       </div>
 
-      <button
-        type="submit"
-        name="add"
-        {% unless product.available %}disabled{% endunless %}
-        class="block w-full bg-black text-white text-center px-6 py-3.5 rounded-md font-medium transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        {% if product.available %}Add to cart{% else %}Sold out{% endif %}
-      </button>
+      {% comment %}
+        Vue add-to-cart island — adds via the shared cart store (no page refresh)
+        and opens the drawer. Variant/quantity wiring to the selector above is
+        Step 3 (ProductForm); for now it adds the current/first-available variant.
+      {% endcomment %}
+      {% if product.available %}
+        <div
+          data-vue-mount="add-to-cart"
+          data-props='{"productId": {{ product.id | json }}, "variantId": {{ current_variant.id | json }}, "buttonText": "Add to cart"}'
+        ></div>
+      {% else %}
+        <button
+          type="button"
+          disabled
+          class="block w-full bg-black text-white text-center px-6 py-3.5 rounded-md font-medium opacity-40 cursor-not-allowed"
+        >
+          Sold out
+        </button>
+      {% endif %}
 
       {{ form | payment_button }}
     {% endform %}

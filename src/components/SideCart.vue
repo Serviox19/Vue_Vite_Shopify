@@ -2,12 +2,12 @@
   <Teleport to="body">
     <!-- Backdrop -->
     <Transition name="sidecart-fade">
-      <div v-if="isOpen" class="fixed inset-0 bg-black/40 z-[998]" @click="close"></div>
+      <div v-if="isDrawerOpen" class="fixed inset-0 bg-black/40 z-[998]" @click="closeDrawer"></div>
     </Transition>
 
     <!-- Drawer -->
     <Transition name="sidecart-slide">
-      <aside v-if="isOpen" class="fixed top-0 right-0 h-full w-full max-w-md bg-white z-[999] flex flex-col shadow-xl"
+      <aside v-if="isDrawerOpen" class="fixed top-0 right-0 h-full w-full max-w-md bg-white z-[999] flex flex-col shadow-xl"
         role="dialog" aria-modal="true" aria-label="Shopping cart">
         <header class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <h2 class="text-base font-semibold">
@@ -15,7 +15,7 @@
             <span v-if="itemCount" class="text-gray-400 font-normal">({{ itemCount }})</span>
           </h2>
           <button type="button" class="text-gray-400 hover:text-black transition-colors" aria-label="Close cart"
-            @click="close">
+            @click="closeDrawer">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
@@ -26,7 +26,7 @@
         <div class="flex-1 overflow-y-auto px-5">
           <div v-if="isEmpty" class="h-full flex flex-col items-center justify-center text-center text-gray-500 py-16">
             <p class="text-sm">Your cart is empty.</p>
-            <a href="/collections/all" class="mt-3 text-sm underline hover:opacity-70" @click="close">
+            <a href="/collections/all" class="mt-3 text-sm underline hover:opacity-70" @click="closeDrawer">
               Continue shopping
             </a>
           </div>
@@ -60,61 +60,34 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { getCart, updateCart } from '@utils/shopify-cart';
-import { formatMoney } from '@/filters/money.js';
+import { computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { useCart } from '@/stores/cart.js';
 import CartLineItem from '@components/CartLineItem.vue';
 
-const isOpen = ref(false);
-const cart = ref(null);
-const updating = ref(false);
+const { items, itemCount, subtotal, isUpdating, isDrawerOpen, update, openDrawer, closeDrawer } = useCart();
 
-const items = computed(() => cart.value?.items ?? []);
-const itemCount = computed(() => cart.value?.item_count ?? 0);
 const isEmpty = computed(() => itemCount.value === 0);
-const subtotal = computed(() => formatMoney(cart.value?.total_price ?? 0));
 
 let cartLink = null;
-
-function open() {
-  isOpen.value = true;
-  document.body.style.overflow = 'hidden';
-}
-
-function close() {
-  isOpen.value = false;
-  document.body.style.overflow = '';
-}
 
 // Intercept the header cart icon so it opens the drawer instead of navigating.
 function handleCartLinkClick(event) {
   event.preventDefault();
-  open();
+  openDrawer();
 }
 
 function handleKeydown(event) {
-  if (event.key === 'Escape' && isOpen.value) close();
+  if (event.key === 'Escape' && isDrawerOpen.value) closeDrawer();
 }
 
-// External update (e.g. AddToCart) — refresh contents and reveal the drawer.
-async function onCartUpdated(event) {
-  cart.value = event.detail?.cart ?? (await getCart());
-  syncBadge();
-  open();
-}
-
-// In-drawer edits: mutate cart state directly from the response so the drawer
-// doesn't re-trigger its open animation (which a 'cart:updated' dispatch would).
+// In-drawer edits go through the shared store; the store's `isUpdating` guard
+// serializes concurrent edits. These don't reopen the drawer.
 async function onUpdateQuantity(key, quantity) {
-  if (updating.value) return;
-  updating.value = true;
+  if (isUpdating.value) return;
   try {
-    cart.value = await updateCart(key, quantity);
-    syncBadge();
+    await update(key, quantity);
   } catch (err) {
     console.error('Failed to update cart item:', err);
-  } finally {
-    updating.value = false;
   }
 }
 
@@ -122,44 +95,20 @@ function onRemove(key) {
   return onUpdateQuantity(key, 0);
 }
 
-// Keep the Liquid-rendered header badge in sync after in-drawer edits.
-function syncBadge() {
-  const link = cartLink ?? document.querySelector('.header__cart-link');
-  if (!link) return;
+// Lock body scroll while the drawer is open (the store doesn't touch the DOM).
+watch(isDrawerOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : '';
+});
 
-  let badge = link.querySelector('.header__cart-count');
-  const count = itemCount.value;
-
-  if (count > 0) {
-    if (!badge) {
-      badge = document.createElement('span');
-      badge.className = 'header__cart-count';
-      link.appendChild(badge);
-    }
-    badge.textContent = count;
-    badge.setAttribute('aria-label', `${count} items in cart`);
-  } else if (badge) {
-    badge.remove();
-  }
-}
-
-onMounted(async () => {
+onMounted(() => {
   cartLink = document.querySelector('.header__cart-link');
   if (cartLink) cartLink.addEventListener('click', handleCartLinkClick);
 
-  window.addEventListener('cart:updated', onCartUpdated);
   document.addEventListener('keydown', handleKeydown);
-
-  try {
-    cart.value = await getCart();
-  } catch (err) {
-    console.error('Failed to load cart:', err);
-  }
 });
 
 onBeforeUnmount(() => {
   if (cartLink) cartLink.removeEventListener('click', handleCartLinkClick);
-  window.removeEventListener('cart:updated', onCartUpdated);
   document.removeEventListener('keydown', handleKeydown);
   document.body.style.overflow = '';
 });

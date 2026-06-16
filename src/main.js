@@ -1,6 +1,17 @@
 import { createApp, defineAsyncComponent } from 'vue';
 import components from '@components/index.js';
+import { useCart } from '@/stores/cart.js';
 import './styles/app.css';
+
+// Load the cart into the shared store once, before any island mounts, so the
+// header badge and drawer have data on first paint. Guarded so theme-editor
+// `shopify:section:load` re-runs don't refetch.
+let cartLoaded = false;
+function loadCart() {
+  if (cartLoaded) return;
+  cartLoaded = true;
+  useCart().fetch().catch(() => {});
+}
 
 // Convert a kebab-case data-vue-mount name to its PascalCase registry key.
 // e.g. "header-slider" -> "HeaderSlider"
@@ -17,6 +28,8 @@ function resolveComponent(entry) {
 
 // Mount a Vue app onto each [data-vue-mount] element on the page.
 function initVueComponents() {
+  loadCart();
+
   document.querySelectorAll('[data-vue-mount]').forEach((el) => {
     if (el.__vue_app__) return; // already mounted (e.g. re-run by theme editor)
 
