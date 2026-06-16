@@ -5,37 +5,166 @@
   https://shopify.dev/docs/storefronts/themes/architecture/templates/collection
 {% endcomment %}
 
-<h1>{{ collection.title }}</h1>
+<div class="collection">
+  <header class="collection__header">
+    <h1 class="collection__title">{{ collection.title }}</h1>
+    {% if collection.description != blank %}
+      <div class="collection__description rte">{{ collection.description }}</div>
+    {% endif %}
+  </header>
 
-<div class="collection-products">
   {% paginate collection.products by 20 %}
-    {% for product in collection.products %}
-      <div class="collection-product">
-        {% if product.featured_image %}
-          {% render 'image',
-            class: 'collection-product__image',
-            image: product.featured_image,
-            url: product.url,
-            width: 400,
-            height: 400,
-            crop: 'center'
-          %}
-        {% endif %}
-        <div class="collection-product__content">
-          <p>{{ product.title | escape | link_to: product.url }}</p>
-          <p>{{ product.price | money }}</p>
-        </div>
-      </div>
-    {% endfor %}
+    <div class="collection-products">
+      {% for product in collection.products %}
+        <a href="{{ product.url }}" class="collection-product">
+          {% if product.featured_image %}
+            {% render 'image',
+              class: 'collection-product__image',
+              image: product.featured_image,
+              width: 400,
+              height: 400,
+              crop: 'center'
+            %}
+          {% else %}
+            <div class="collection-product__image collection-product__image--placeholder">
+              {{ 'product-1' | placeholder_svg_tag }}
+            </div>
+          {% endif %}
+          <div class="collection-product__content">
+            <p class="collection-product__title">{{ product.title | escape }}</p>
+            <p class="collection-product__price">
+              {% if product.compare_at_price > product.price %}
+                <span class="collection-product__price--sale">{{ product.price | money }}</span>
+                <s class="collection-product__price--was">{{ product.compare_at_price | money }}</s>
+              {% else %}
+                {{ product.price | money }}
+              {% endif %}
+            </p>
+          </div>
+        </a>
+      {% else %}
+        <p class="collection__empty">No products found in this collection.</p>
+      {% endfor %}
+    </div>
 
-    {{ paginate | default_pagination }}
+    {% if paginate.pages > 1 %}
+      <div class="collection__pagination">{{ paginate | default_pagination }}</div>
+    {% endif %}
   {% endpaginate %}
 </div>
 
 {% stylesheet %}
+  .collection {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: 2rem var(--page-margin, 1rem) 3rem;
+  }
+
+  .collection__header {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .collection__title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .collection__description {
+    margin: 0.75rem auto 0;
+    max-width: 42rem;
+    color: var(--color-foreground);
+    opacity: 0.7;
+  }
+
   .collection-products {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 2rem 1.5rem;
+  }
+
+  .collection-product {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+
+  .collection-product .collection-product__image {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--style-border-radius-inputs, 4px);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .collection-product .collection-product__image > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .collection-product__image--placeholder svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .collection-product__image > img,
+  .collection-product__title {
+    transition: opacity 0.2s ease;
+  }
+
+  .collection-product:hover .collection-product__image > img {
+    opacity: 0.85;
+  }
+
+  .collection-product:hover .collection-product__title {
+    opacity: 0.6;
+  }
+
+  .collection-product__content {
+    margin-top: 0.75rem;
+  }
+
+  .collection-product__title {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .collection-product__price {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .collection-product__price--sale {
+    color: #c0392b;
+  }
+
+  .collection-product__price--was {
+    margin-left: 0.4rem;
+    opacity: 0.5;
+    font-weight: 400;
+  }
+
+  .collection__empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    opacity: 0.6;
+    padding: 3rem 0;
+  }
+
+  .collection__pagination {
+    margin-top: 2.5rem;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .collection-products {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem 1rem;
+    }
   }
 {% endstylesheet %}
 

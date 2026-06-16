@@ -1,134 +1,54 @@
-import { createApp } from 'vue';
+import { createApp, defineAsyncComponent } from 'vue';
+import components from '@components/index.js';
 import './styles/app.css';
 
-// Debug logging
-console.log('main.js loaded successfully!');
-console.log('Current location:', window.location.href);
-
-// Lazy-loaded component registry
-const componentImports = {
-  'add-to-cart': () => import('./components/AddToCart.vue'),
-  'product-variants': () => import('./components/ProductVariants.vue'),
-  'header-slider': () => import('./components/HeaderSlider.vue'),
-};
-
-// Cache for loaded components (persists across section reloads)
-const loadedComponentsCache = new Map();
-
-// Debounce function to prevent rapid successive calls
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
+// Convert a kebab-case data-vue-mount name to its PascalCase registry key.
+// e.g. "header-slider" -> "HeaderSlider"
+function toPascalCase(name) {
+  return name.replace(/(^\w|-\w)/g, (match) => match.replace('-', '').toUpperCase());
 }
 
-/**
- * Initialize Vue components based on data-vue-mount attributes
- * Components are lazy-loaded only when needed with optimizations:
- * - Component caching across section reloads
- * - Individual component loading (no waiting for all)
- * - Debounced section load handling
- * Usage: <div data-vue-mount="add-to-cart" data-props='{"productId": 123}'></div>
- */
-async function initVueComponents() {
-  console.log('initVueComponents called');
+// Resolve a registry entry to a mountable component. Deferred entries are
+// loader functions (() => import(...)); wrap them so they mount like the
+// statically-imported ones and only fetch their chunk when used.
+function resolveComponent(entry) {
+  return typeof entry === 'function' ? defineAsyncComponent(entry) : entry;
+}
 
-  // Find all elements with data-vue-mount attribute
-  const mountPoints = document.querySelectorAll('[data-vue-mount]');
-  console.log('Found mount points:', mountPoints.length, mountPoints);
+// Mount a Vue app onto each [data-vue-mount] element on the page.
+function initVueComponents() {
+  document.querySelectorAll('[data-vue-mount]').forEach((el) => {
+    if (el.__vue_app__) return; // already mounted (e.g. re-run by theme editor)
 
-  if (mountPoints.length === 0) {
-    console.log('No Vue components found on page');
-    return; // No Vue components needed on this page
-  }
+    const name = el.dataset.vueMount;
+    const entry = components[toPascalCase(name)];
 
-  // Get unique component names needed on this page
-  const neededComponents = [...new Set(
-    Array.from(mountPoints).map(el => el.dataset.vueMount)
-  )];
-
-  // Load and mount components individually (don't wait for all)
-  const mountPromises = neededComponents.map(async (componentName) => {
-    // Check cache first
-    if (loadedComponentsCache.has(componentName)) {
-      const component = loadedComponentsCache.get(componentName);
-      mountComponent(componentName, component, mountPoints);
+    if (!entry) {
+      console.warn(`No component registered for data-vue-mount="${name}"`);
       return;
     }
 
-    const importFn = componentImports[componentName];
-    if (!importFn) {
-      console.warn(`Vue component "${componentName}" not found in registry`);
-      return;
-    }
-
-    try {
-      const module = await importFn();
-      const component = module.default;
-
-      // Cache the loaded component
-      loadedComponentsCache.set(componentName, component);
-
-      // Mount immediately after loading
-      mountComponent(componentName, component, mountPoints);
-    } catch (e) {
-      console.error(`Failed to load component "${componentName}":`, e);
-    }
-  });
-
-  // Don't wait for all components to load - they mount individually
-  await Promise.allSettled(mountPromises);
-}
-
-/**
- * Mount a specific component to all matching elements
- */
-function mountComponent(componentName, component, mountPoints) {
-  mountPoints.forEach((el) => {
-    if (el.dataset.vueMount !== componentName) return;
-
-    // Skip if already mounted
-    if (el.__vue_app__) return;
-
-    // Parse props from data-props attribute if present
     let props = {};
     if (el.dataset.props) {
       try {
         props = JSON.parse(el.dataset.props);
       } catch (e) {
-        console.error(`Failed to parse props for ${componentName}:`, e);
+        console.error(`Invalid data-props for "${name}":`, e);
       }
     }
 
-    // Create and mount the Vue app
-    const app = createApp(component, props);
-    app.mount(el);
+    createApp(resolveComponent(entry), props).mount(el);
   });
 }
 
-// Initialize when DOM is ready
-console.log('Setting up DOM ready listener, current readyState:', document.readyState);
+// Run once the DOM is ready.
 if (document.readyState === 'loading') {
-  console.log('Adding DOMContentLoaded listener');
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired');
-    initVueComponents();
-  });
+  document.addEventListener('DOMContentLoaded', initVueComponents);
 } else {
-  console.log('DOM already ready, calling initVueComponents');
   initVueComponents();
 }
 
-// Debounced section load handler (prevents rapid successive calls)
-const debouncedInit = debounce(() => initVueComponents(), 100);
-
-// Re-initialize on Shopify section load/reload (for theme editor)
+// Re-mount components when the theme editor loads/reloads a section.
 if (typeof Shopify !== 'undefined') {
-  document.addEventListener('shopify:section:load', debouncedInit);
+  document.addEventListener('shopify:section:load', initVueComponents);
 }

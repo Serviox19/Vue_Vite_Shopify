@@ -34,6 +34,9 @@
 
     {% sections 'footer-group' %}
 
+    {% # Mini cart drawer (Vue) — drawer/backdrop teleport to <body> %}
+    <div data-vue-mount="side-cart"></div>
+
     {% render 'vite-tag', vite-tag: 'main.js' %}
   </body>
 </html>

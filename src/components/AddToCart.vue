@@ -31,15 +31,16 @@ async function handleAddToCart() {
   success.value = false;
 
   try {
-    await addToCart({
+    const cart = await addToCart({
       id: selectedVariantId.value,
       quantity: 1,
     });
 
     success.value = true;
 
-    // Dispatch custom event for cart updates
-    window.dispatchEvent(new CustomEvent('cart:updated'));
+    // Dispatch custom event for cart updates. Pass the fresh cart so listeners
+    // (e.g. SideCart) can render without an extra /cart.js fetch.
+    window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart } }));
 
     // Reset success state after 2 seconds
     setTimeout(() => {

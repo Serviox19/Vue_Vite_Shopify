@@ -29,18 +29,18 @@ export async function addToCart(items) {
 
 /**
  * Update cart item quantity
- * @param {String|Number} lineId - Cart line item id
- * @param {Number} quantity - New quantity
+ * @param {String} key - Cart line item key (stable across index shifts)
+ * @param {Number} quantity - New quantity (0 removes the line)
  * @returns {Promise<Object>} Updated cart data
  */
-export async function updateCart(lineId, quantity) {
+export async function updateCart(key, quantity) {
   const response = await fetch('/cart/change.js', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      line: lineId,
+      id: key,
       quantity,
     }),
   });
