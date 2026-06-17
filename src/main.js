@@ -1,59 +1,67 @@
-import { createApp } from 'vue';
+import { createApp, defineAsyncComponent } from 'vue';
+import components from '@components/index.js';
+import { useCart } from '@/stores/cart.js';
 import './styles/app.css';
 
-// Import Vue components
-import AddToCart from './components/AddToCart.vue';
-import ProductVariants from './components/ProductVariants.vue';
+// Load the cart into the shared store once, before any island mounts, so the
+// header badge and drawer have data on first paint. Guarded so theme-editor
+// `shopify:section:load` re-runs don't refetch.
+let cartLoaded = false;
+function loadCart() {
+  if (cartLoaded) return;
+  cartLoaded = true;
+  useCart().fetch().catch(() => {});
+}
 
-// Component registry
-const components = {
-  'add-to-cart': AddToCart,
-  'product-variants': ProductVariants,
-};
+// Convert a kebab-case data-vue-mount name to its PascalCase registry key.
+// e.g. "header-slider" -> "HeaderSlider"
+function toPascalCase(name) {
+  return name.replace(/(^\w|-\w)/g, (match) => match.replace('-', '').toUpperCase());
+}
 
-/**
- * Initialize Vue components based on data-vue-mount attributes
- * Usage in Liquid: <div data-vue-mount="add-to-cart" :data-props="{ ... }"></div>
- */
+// Resolve a registry entry to a mountable component. Deferred entries are
+// loader functions (() => import(...)); wrap them so they mount like the
+// statically-imported ones and only fetch their chunk when used.
+function resolveComponent(entry) {
+  return typeof entry === 'function' ? defineAsyncComponent(entry) : entry;
+}
+
+// Mount a Vue app onto each [data-vue-mount] element on the page.
 function initVueComponents() {
-  // Find all elements with data-vue-mount attribute
-  const mountPoints = document.querySelectorAll('[data-vue-mount]');
+  loadCart();
 
-  mountPoints.forEach((el) => {
-    const componentName = el.dataset.vueMount;
-    const component = components[componentName];
+  document.querySelectorAll('[data-vue-mount]').forEach((el) => {
+    if (el.__vue_app__) return; // already mounted (e.g. re-run by theme editor)
 
-    if (!component) {
-      console.warn(`Vue component "${componentName}" not found`);
+    const name = el.dataset.vueMount;
+    const entry = components[toPascalCase(name)];
+
+    if (!entry) {
+      console.warn(`No component registered for data-vue-mount="${name}"`);
       return;
     }
 
-    // Parse props from data-props attribute if present
     let props = {};
     if (el.dataset.props) {
       try {
         props = JSON.parse(el.dataset.props);
       } catch (e) {
-        console.error(`Failed to parse props for ${componentName}:`, e);
+        console.error(`Invalid data-props for "${name}":`, e);
       }
     }
 
-    // Create and mount the Vue app
-    const app = createApp(component, props);
-    app.mount(el);
+    createApp(resolveComponent(entry), props).mount(el);
   });
 }
 
-// Initialize when DOM is ready
+// Run once the DOM is ready.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initVueComponents);
 } else {
   initVueComponents();
 }
 
-// Re-initialize on Shopify section load/reload (for theme editor)
+// Re-mount components when the theme editor loads/reloads a section.
 if (typeof Shopify !== 'undefined') {
-  document.addEventListener('shopify:section:load', () => {
-    setTimeout(initVueComponents, 100);
-  });
+  document.addEventListener('shopify:section:load', initVueComponents);
 }

@@ -19,14 +19,19 @@ export default defineConfig(({ mode }) => {
 
     build: {
       outDir,
-      emptyOutDir: false, // Don't delete existing theme assets
+      emptyOutDir: false,
+      cssCodeSplit: false,
       manifest: true,
       rollupOptions: {
         input: {
           main: './src/main.js',
         },
         output: {
-          entryFileNames: '[name].js',
+          // Content hashes in the filename are what cache-bust theme assets:
+          // the vite-plugin-shopify snippet strips Shopify's ?v= param, so an
+          // unhashed name (main.js) gets cached by the CDN forever and deploys
+          // never take effect. A hashed name changes the URL on every code change.
+          entryFileNames: '[name]-[hash].js',
           chunkFileNames: '[name]-[hash].js',
           assetFileNames: '[name].[ext]',
         },
@@ -39,7 +44,6 @@ export default defineConfig(({ mode }) => {
         ignored: ['**/dist/**', '**/shopify/assets/main.*', '**/node_modules/**'],
       },
     },
-
     resolve: {
       alias: {
         '@': '/src',

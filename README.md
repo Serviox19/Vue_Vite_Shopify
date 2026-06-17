@@ -1,29 +1,44 @@
 # Shopify Vue Theme Development
 
-Professional Shopify theme development skeleton with Vue 3, Vite, and Tailwind CSS v4.
+Shopify theme built with Vue 3 **islands**, Vite, and Tailwind CSS v3. Interactivity and
+state live in small Vue components mounted onto Liquid-rendered markup — this is **not** a
+SPA. Liquid still renders the pages; Vue progressively enhances specific spots.
+
+## Architecture
+
+- **Islands, not an app shell.** Each interactive spot is a `[data-vue-mount]` element.
+  `src/main.js` finds them on load and mounts a Vue app onto each one.
+- **Shared state via a reactive store.** `src/stores/cart.js` is a module-scoped reactive
+  singleton. Every island calls `useCart()` and reads from the same `state`, so the header
+  badge, add-to-cart buttons, and cart drawer all stay in sync without events or prop
+  drilling. (It's not Pinia, but Pinia could wrap it later.)
+- **Vite + vite-plugin-shopify.** The plugin generates the `snippets/vite-tag.liquid`
+  snippet. In dev it points at the Vite dev server; in production it points at the built,
+  content-hashed asset.
 
 ## Structure
 
 ```
 /
-├── src/                    # Modern source code (Vite input)
-│   ├── main.js            # Vue initialization and component mounting
-│   ├── components/        # Vue SFC components
-│   ├── styles/            # Tailwind CSS and global styles
-│   └── utils/             # Shopify API helpers
-├── shopify/               # Source Shopify theme files (tracked in git)
-│   ├── assets/           # Static assets (images, fonts, etc.)
-│   ├── config/
-│   ├── layout/
-│   ├── locales/
-│   ├── sections/
-│   ├── snippets/
-│   └── templates/
-├── dist/                  # Built theme (untracked - generated on build)
-│   ├── assets/           # Vite builds here: main.js, main.css + static assets
-│   └── [all theme files copied from /shopify]
-└── [config files]         # Vite, Tailwind, PostCSS configs
+├── src/                    # Vite source (the only place to edit JS/CSS/Vue)
+│   ├── main.js            # Finds [data-vue-mount] elements and mounts islands
+│   ├── components/        # Vue SFCs
+│   │   └── index.js       # Component registry (maps mount names → components)
+│   ├── stores/            # Shared reactive stores (cart.js)
+│   ├── filters/           # Formatting helpers (money.js, string.js)
+│   ├── styles/            # Tailwind entry + global styles (app.css)
+│   └── utils/             # Shopify AJAX API helpers (shopify-cart.js)
+├── shopify/               # Source theme files (tracked in git)
+│   ├── assets/            # Hand-authored static assets only (critical.css, SVGs)
+│   ├── config/  layout/  locales/  sections/  snippets/  templates/
+├── dist/                  # Build output (untracked) — this is what gets deployed
+│   ├── assets/            # Vite emits main-[hash].js, HeaderSlider-[hash].js, style.css
+│   └── [theme files copied from /shopify, with the prod vite-tag snippet]
+└── [vite.config.js, tailwind.config.js, postcss.config.js, shopify.theme.toml]
 ```
+
+> **Note:** `shopify/assets/` holds only hand-authored static files. Built bundles are
+> **not** written here — dev serves them from Vite, prod builds them into `dist/`.
 
 ## Setup
 
@@ -31,189 +46,142 @@ Professional Shopify theme development skeleton with Vue 3, Vite, and Tailwind C
    ```bash
    npm install
    ```
-
-2. **Configure your Shopify store:**
-   Update `shopify.theme.toml` with your store URL:
-   ```toml
-   [environments.development]
-   store = "your-store.myshopify.com"
-   ```
-
-3. **Integrate Vite assets in theme.liquid:**
-   Ensure `/shopify/layout/theme.liquid` loads the built assets:
-   ```liquid
-   <!-- In <head> -->
-   {{ 'main.css' | asset_url | stylesheet_tag }}
-
-   <!-- Before </body> -->
-   <script src="{{ 'main.js' | asset_url }}" defer></script>
-   ```
-   (These files will be in `/dist/assets/` after building)
+2. **Store target:** the store is set in the npm scripts (`--store=...`) and
+   `shopify.theme.toml`. Update both if you point at a different store.
 
 ## Development
 
-**Two terminal workflow:**
+Two terminals:
 
-1. **Terminal 1 - Start Vite dev server:**
+1. **Vite dev server** (serves JS/CSS with HMR from `http://localhost:5173`):
    ```bash
    npm run dev
    ```
-   This builds assets to `/shopify/assets/` with HMR.
+   This does **not** write files into `shopify/assets/` — the dev `vite-tag` snippet loads
+   modules straight from the Vite server, so your `src/` is always live.
 
-2. **Terminal 2 - Start Shopify theme server:**
+2. **Shopify theme dev** (serves the `/shopify` theme, proxied at `127.0.0.1:9292`):
    ```bash
    npm run shopify:dev
    ```
-   This serves `/shopify` directory directly.
 
-3. **Access your store:**
-   - Open the URL provided by `shopify theme dev`
-   - Edit files in `/shopify` (Liquid) or `/src` (Vue/JS/CSS)
-   - Vite HMR updates automatically for Vue components and styles
-   - Shopify theme dev reloads for Liquid changes
+Edit Liquid in `/shopify` (theme dev reloads) or Vue/JS/CSS in `/src` (Vite HMR). Because
+dev bypasses the built assets entirely, **a fix that works in dev but not on the deployed
+theme is almost always an asset-caching/build issue, not a code issue.**
 
-## Production Build
+## Production build & deploy
 
-Build for production deployment:
 ```bash
-npm run build
+npm run build     # rm -rf dist → cp shopify → dist → vite build into dist/assets
+npm run deploy    # build, then: shopify theme push --path=dist
 ```
 
-This process:
-1. Removes old `/dist` folder
-2. Copies `/shopify` → `/dist`
-3. Compiles `src/main.js` → `dist/assets/main.js`
-4. Compiles `src/styles/app.css` → `dist/assets/main.css`
+The build emits content-**hashed** JS (`main-[hash].js`) and regenerates the prod
+`vite-tag` snippet to reference it. The hash is what cache-busts the bundle: the snippet
+strips Shopify's `?v=` param, so an unhashed filename would be cached by the CDN forever
+and deploys would silently never take effect. CSS (`style.css`) is loaded by `theme.liquid`
+via `{{ 'style.css' | asset_url }}`, which keeps `?v=` and cache-busts on its own.
 
-The `/dist` folder contains your complete, optimized, ready-to-deploy theme.
+> When `npm run deploy` prompts for a theme, pick the one you're actually viewing — pushing
+> to a different theme is the most common "my deploy did nothing" mistake.
 
-## Deployment
-
-Deploy to Shopify (builds and pushes):
+Pull remote theme changes:
 ```bash
-npm run deploy
+npm run shopify:pull
 ```
 
-Or build separately:
-```bash
-npm run build           # Build production to /dist
-shopify theme push --path=dist
+## How assets load (theme.liquid)
+
+```liquid
+{# CSS — critical.css is hand-authored; style.css is the Vite bundle #}
+{{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
+{{ 'style.css'    | asset_url | stylesheet_tag }}
+
+{# JS — the snippet resolves to the hashed bundle (or the Vite dev server in dev) #}
+{% render 'vite-tag', vite-tag: 'main.js' %}
 ```
 
-Pull from Shopify:
-```bash
-npm run shopify:pull    # Pull theme to /shopify
+> Theme Check may flag `style.css` as a missing asset — that's expected. It's generated into
+> `dist/` at build time and isn't present in `shopify/assets/`.
+
+## Vue components
+
+### Register a component
+
+Add it to the registry in `src/components/index.js` (not `main.js`):
+
+```js
+import MyWidget from '@components/MyWidget.vue';
+
+export default {
+  MyWidget,                                   // eager: bundled into main.js
+  // Deferred: only fetched when its markup is on the page (own async chunk)
+  HeaderSlider: () => import('@components/HeaderSlider.vue'),
+};
 ```
 
-## Tailwind CSS
+The registry key is PascalCase; the mount name in Liquid is its kebab-case form
+(`MyWidget` ↔ `data-vue-mount="my-widget"`).
 
-Standard Tailwind classes without prefix:
-
-```html
-<div class="bg-blue-500 text-white p-4">
-  Content
-</div>
-```
-
-If you need to avoid conflicts with existing theme styles, add `prefix: 'tw-'` to `tailwind.config.js`.
-
-## Vue Components
-
-### Creating a component
-
-1. Create a `.vue` file in `src/components/`
-2. Register it in `src/main.js`:
-   ```js
-   import MyComponent from './components/MyComponent.vue';
-   const components = {
-     'my-component': MyComponent,
-   };
-   ```
-
-### Using in Liquid
-
-Mount Vue components using `data-vue-mount`:
+### Mount in Liquid
 
 ```liquid
 <div
   data-vue-mount="add-to-cart"
-  data-props='{"productId": {{ product.id }}, "variantId": {{ variant.id }}}'
+  data-props='{"productId": {{ product.id | json }}, "variantId": {{ product.selected_or_first_available_variant.id | json }}, "buttonText": "Add to cart"}'
 >
-  <!-- Fallback content if JS disabled -->
+  <button>Add to cart</button> {# fallback before JS mounts #}
 </div>
 ```
 
-Or use the helper snippet:
-```liquid
-{% render 'vue-mount-snippet',
-  component: 'add-to-cart',
-  props: product_json
-%}
-```
+Props are passed as a JSON string in `data-props` and parsed at mount.
 
-### Passing Shopify data to Vue
+**Available components:**
+- `add-to-cart` — add button with loading/success states (writes to the cart store)
+- `product-variants` — variant selector with option buttons
+- `cart-count` — header cart badge (reads the store)
+- `side-cart` — cart drawer (teleports to `<body>`; mounted once in `theme.liquid`)
+- `header-slider` — homepage slider (deferred / async-loaded)
 
-Serialize Shopify objects to JSON in Liquid, then parse in Vue:
+## Cart & state
 
-```liquid
-{% capture product_data %}
-{
-  "id": {{ product.id | json }},
-  "title": {{ product.title | json }},
-  "price": {{ product.price | json }}
-}
-{% endcapture %}
-
-<div
-  data-vue-mount="product-card"
-  data-props='{{ product_data }}'
-></div>
-```
-
-## Shopify Cart API
-
-Use the utilities in `src/utils/shopify-cart.js`:
+Components don't call the Shopify API directly — they go through the shared store:
 
 ```js
-import { addToCart, getCart, updateCart } from '@utils/shopify-cart';
+import { useCart } from '@/stores/cart.js';
 
-// Add to cart
-await addToCart({ id: variantId, quantity: 1 });
+const { items, itemCount, subtotal, add, update, openDrawer, closeDrawer } = useCart();
 
-// Get cart
-const cart = await getCart();
+await add({ id: variantId, quantity: 1 }); // POSTs /cart/add.js, re-fetches, opens drawer
 ```
+
+The store (`src/stores/cart.js`) is the single source of truth and delegates HTTP to the
+low-level helpers in `src/utils/shopify-cart.js` (`getCart`/`addToCart`/`updateCart`).
+`getCart()` uses `fetch('/cart.js', { cache: 'no-store' })` so the count/drawer reflect a
+fresh cart immediately after an add (otherwise the browser serves a cached pre-add cart).
+
+## Tailwind
+
+Tailwind v3, standard classes (no prefix). The entry is `src/styles/app.css`
+(`@tailwind base/components/utilities`). Add `prefix: 'tw-'` in `tailwind.config.js` if you
+need to avoid collisions with existing theme styles.
 
 ## Scripts
 
-**Development:**
-- `npm run dev` - Vite dev server (builds to `/shopify/assets/`)
-- `npm run shopify:dev` - Shopify theme dev server (serves `/shopify`)
+- `npm run dev` — Vite dev server (HMR from localhost:5173)
+- `npm run shopify:dev` — Shopify theme dev server (serves `/shopify`)
+- `npm run build` — build production theme into `/dist`
+- `npm run deploy` — build and push `/dist` to Shopify
+- `npm run shopify:pull` — pull the theme from Shopify into `/shopify`
 
-**Production:**
-- `npm run build` - Build production theme to `/dist`
-- `npm run deploy` - Build and push `/dist` to Shopify
-- `npm run shopify:pull` - Pull theme from Shopify to `/shopify`
+## Notes
 
-## Important Notes
-
-- **Development**: Edit files in `/shopify` and `/src` - assets build to `/shopify/assets/`
-- **Production**: Build creates `/dist` with optimized assets - deploy this folder
-- **Never edit**: `/dist` folder or built files in `/shopify/assets/` (main.js, main.css)
-- **Section group files**: `*-group.json` files (e.g., `header-group.json`) are auto-generated by Shopify theme editor and ignored by git. Pull from Shopify to get the latest version.
-- **Vite dev files**: `.vite/` folders and manifest files are development-only and ignored from git/Shopify
-- **Theme editor**: Vue components work in the Shopify theme editor; they reinitialize on section reload
-- **JSON templates**: Fully compatible with Shopify 2.0 JSON templates and sections
-
-## Theme Editor Compatibility
-
-Vue components automatically reinitialize when sections are loaded/reloaded in the Shopify theme editor. The `shopify:section:load` event is handled in `src/main.js`.
-
-## Project Structure Notes
-
-- **`/shopify`**: Source Shopify theme files (tracked in git, except built assets)
-- **`/src`**: Vue components, styles, and utilities (tracked in git)
-- **`/dist`**: Production build output (untracked - generated by `npm run build`)
-- **Dev workflow**: Edit `/shopify` + `/src` → Vite builds to `/shopify/assets/` → Shopify CLI serves `/shopify`
-- **Prod workflow**: `npm run build` → copies to `/dist` with optimized assets → deploy `/dist`
-- **Static assets**: Place images, fonts, etc. in `/shopify/assets/` (they're preserved during build)
+- **Edit only `/src` and `/shopify`.** Never edit `/dist` (regenerated every build).
+- **`/dist` is untracked.** It's produced by `npm run build`.
+- **Static assets** (images, fonts, hand-authored CSS like `critical.css`) go in
+  `shopify/assets/` and are preserved into `dist/` during build.
+- **Section group files** (`*-group.json`) are managed by the Shopify theme editor; pull to
+  get the latest.
+- **`.vite/` and manifests** are dev-only and excluded from git/Shopify.
+- **Theme editor:** islands re-mount on `shopify:section:load`, handled in `src/main.js`.
+```

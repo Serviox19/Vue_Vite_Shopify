@@ -5,29 +5,125 @@
   https://shopify.dev/docs/storefronts/themes/architecture/templates/cart
 {% endcomment %}
 
-<h1>{{ 'cart.title' | t }}</h1>
+<div class="cart max-w-8xl mx-auto px-4 py-10">
+  <h1 class="text-2xl md:text-3xl font-bold mb-8">{{ 'cart.title' | t }}</h1>
 
-<form action="{{ routes.cart_url }}" method="post">
-  <table>
-    {% for item in cart.items %}
-      <tr>
-        <td>
-          {% render 'image', image: item.image, url: item.url %}
-        </td>
-        <td>
-          <p>{{ item.product.title }}</p>
-          {{ 'cart.remove' | t | link_to: item.url_to_remove }}
-        </td>
-        <td>
-          <input type="text" name="updates[]" value="{{ item.quantity }}">
-          <input type="submit" value="{{ 'cart.update' | t }}">
-        </td>
-      </tr>
-    {% endfor %}
-  </table>
+  {% if cart.item_count == 0 %}
+    <div class="py-20 text-center">
+      <p class="text-gray-500">Your cart is empty.</p>
+      <a
+        href="{{ routes.all_products_collection_url }}"
+        class="inline-block mt-4 bg-black text-white px-6 py-3 rounded-md font-medium transition-opacity hover:opacity-90"
+      >
+        Continue shopping
+      </a>
+    </div>
+  {% else %}
+    <form action="{{ routes.cart_url }}" method="post" class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+      {% comment %} Left: line items {% endcomment %}
+      <div class="cart__items">
+        {% for item in cart.items %}
+          <div class="flex gap-4 py-5 border-b border-gray-200">
+            <a href="{{ item.url }}" class="shrink-0">
+              {% if item.image %}
+                <img
+                  src="{{ item.image | image_url: width: 160 }}"
+                  alt="{{ item.image.alt | escape }}"
+                  width="96"
+                  height="96"
+                  class="w-24 h-24 object-cover rounded-md bg-gray-100"
+                  loading="lazy"
+                >
+              {% else %}
+                <div class="w-24 h-24 rounded-md bg-gray-100"></div>
+              {% endif %}
+            </a>
 
-  <input type="submit" name="checkout" value="{{ 'cart.checkout' | t }}">
-</form>
+            <div class="flex-1 min-w-0 flex flex-col">
+              <div class="flex justify-between gap-3">
+                <a href="{{ item.url }}" class="font-medium leading-snug hover:opacity-70">
+                  {{ item.product.title | escape }}
+                </a>
+                <span class="font-semibold tabular-nums whitespace-nowrap">{{ item.final_line_price | money }}</span>
+              </div>
+
+              {% unless item.product.has_only_default_variant %}
+                <p class="text-sm text-gray-500 mt-1">{{ item.variant.title | escape }}</p>
+              {% endunless %}
+
+              {% if item.original_line_price > item.final_line_price %}
+                <p class="text-sm text-gray-400 mt-1">
+                  <s>{{ item.original_line_price | money }}</s>
+                </p>
+              {% endif %}
+
+              <div class="flex items-center justify-between mt-auto pt-3">
+                <label class="sr-only" for="updates_{{ forloop.index }}">Quantity</label>
+                <input
+                  type="number"
+                  id="updates_{{ forloop.index }}"
+                  name="updates[]"
+                  value="{{ item.quantity }}"
+                  min="0"
+                  inputmode="numeric"
+                  onchange="this.form.submit()"
+                  class="w-16 h-10 px-2 text-center border border-gray-300 rounded-md tabular-nums"
+                >
+                <a href="{{ item.url_to_remove }}" class="text-sm text-gray-500 underline hover:text-black">
+                  {{ 'cart.remove' | t }}
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% comment %} Right: order summary {% endcomment %}
+      <aside class="cart__summary lg:sticky lg:top-8 border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold mb-4">Order summary</h2>
+
+        <dl class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-gray-600">Subtotal ({{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %})</dt>
+            <dd class="font-medium tabular-nums">{{ cart.total_price | money }}</dd>
+          </div>
+
+          {% if cart.total_discount > 0 %}
+            <div class="flex justify-between text-green-700">
+              <dt>Discount</dt>
+              <dd class="tabular-nums">−{{ cart.total_discount | money }}</dd>
+            </div>
+          {% endif %}
+
+          <div class="flex justify-between">
+            <dt class="text-gray-600">Shipping</dt>
+            <dd class="text-gray-500">Calculated at checkout</dd>
+          </div>
+        </dl>
+
+        <div class="flex items-baseline justify-between mt-4 pt-4 border-t border-gray-200">
+          <span class="font-semibold">Total</span>
+          <span class="text-xl font-bold tabular-nums">{{ cart.total_price | money }}</span>
+        </div>
+
+        <button
+          type="submit"
+          name="checkout"
+          class="block w-full mt-6 bg-black text-white text-center px-6 py-3 rounded-md font-medium transition-opacity hover:opacity-90"
+        >
+          {{ 'cart.checkout' | t }}
+        </button>
+
+        <a
+          href="{{ routes.all_products_collection_url }}"
+          class="block w-full mt-3 text-center text-sm underline hover:opacity-70"
+        >
+          Continue shopping
+        </a>
+      </aside>
+    </form>
+  {% endif %}
+</div>
 
 {% schema %}
 {

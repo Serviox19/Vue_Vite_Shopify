@@ -1,0 +1,14 @@
+# Vite build manifest lives in a subfolder under assets/, which Shopify rejects
+# ("Theme files may not be stored in subfolders"). It's needed locally by
+# vite-plugin-shopify but must never be served or pushed to the store.
+assets/.vite/
+
+# Atomic-save temp files
+*.tmp.*
+
+.git
+.github
+node_modules
+.DS_Store
+src
+*.log

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
+import { formatMoney } from '@/filters/money.js';
 
 const props = defineProps({
   product: {
@@ -24,14 +25,9 @@ const isAvailable = computed(() => {
   return currentVariant.value?.available ?? false;
 });
 
-const variantPrice = computed(() => {
-  if (!currentVariant.value) return '';
-  const price = currentVariant.value.price / 100;
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(price);
-});
+const variantPrice = computed(() =>
+  currentVariant.value ? formatMoney(currentVariant.value.price) : ''
+);
 
 function selectVariant(variantId) {
   currentVariantId.value = variantId;
