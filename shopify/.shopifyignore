@@ -6,6 +6,9 @@ assets/.vite/
 # Atomic-save temp files
 *.tmp.*
 
+config/settings_data.json
+templates/*.json
+
 .git
 .github
 node_modules
