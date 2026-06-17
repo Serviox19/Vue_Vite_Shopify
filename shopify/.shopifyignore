@@ -7,3 +7,10 @@ assets/.vite/
 # briefly during writes. The dev watcher can catch them mid-save and try to upload
 # them, which Shopify rejects ("contains illegal characters"). Harmless but noisy.
 *.tmp.*
+
+
+.git
+.github
+node_modules
+src
+*.log

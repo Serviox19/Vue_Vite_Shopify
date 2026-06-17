@@ -22,7 +22,6 @@ jobs:
             environment: production
             allow_live: true
 
-    # Run the job for all matrix entries, but we'll filter inside
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,10 +38,9 @@ jobs:
         run: npm ci
         if: github.ref_name == matrix.branch
 
-      - name: Build (if needed)
+      - name: Build
         run: npm run build
         if: github.ref_name == matrix.branch
-        # Remove this step if you don't have a build
 
       - name: Install Shopify CLI
         run: npm install -g @shopify/cli
@@ -50,6 +48,11 @@ jobs:
 
       - name: Deploy to ${{ matrix.environment }}
         run: |
+          echo "=== Deploying from dist/ folder ==="
+          ls -la dist/ || echo "ERROR: dist/ folder not found!"
+
+          cd dist
+
           shopify theme push \
             --theme=${{ matrix.theme_id }} \
             --store=${{ secrets.SHOPIFY_FLAG_STORE }} \
