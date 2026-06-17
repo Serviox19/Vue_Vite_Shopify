@@ -3,14 +3,12 @@
 # vite-plugin-shopify but must never be served or pushed to the store.
 assets/.vite/
 
-# Atomic-save temp files (e.g. collection.liquid.tmp.15492.0f05a5e8b63a) created
-# briefly during writes. The dev watcher can catch them mid-save and try to upload
-# them, which Shopify rejects ("contains illegal characters"). Harmless but noisy.
+# Atomic-save temp files
 *.tmp.*
-
 
 .git
 .github
 node_modules
+.DS_Store
 src
 *.log
