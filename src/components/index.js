@@ -1,8 +1,7 @@
 // Components
-import AddToCart from '@components/AddToCart.vue';
-import ProductVariants from '@components/ProductVariants.vue';
-import SideCart from '@components/SideCart.vue';
 import CartCount from '@components/CartCount.vue';
+import SideCart from '@components/SideCart.vue';
+import HeaderSlider from '@components/HeaderSlider.vue';
 
 /**
  * Deferred components
@@ -12,7 +11,8 @@ import CartCount from '@components/CartCount.vue';
  *
  * i.e. below the fold components, landing page components, etc.
  */
-const HeaderSlider = () => import('@components/HeaderSlider.vue');
+const AddToCart = () => import('@components/AddToCart.vue');
+const ProductVariants = () => import('@components/ProductVariants.vue');
 
 export default {
   AddToCart,
