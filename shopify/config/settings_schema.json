@@ -4,6 +4,16 @@
     "settings": [
       {
         "type": "header",
+        "content": "t:general.fonts"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_primary_font",
+        "default": "work_sans_n4",
+        "label": "t:general.primary"
+      },
+      {
+        "type": "header",
         "content": "Layout"
       },
       {
