@@ -58,7 +58,8 @@ jobs:
             --store=${{ secrets.SHOPIFY_FLAG_STORE }} \
             --password=${{ secrets.SHOPIFY_CLI_THEME_TOKEN }} \
             --json \
-            --ignore="config/settings_data.json,templates/*.json" \
+            --ignore="config/settings_data.json" \
+            --ignore="templates/*.json" \
             ${{ matrix.allow_live && '--allow-live' || '' }} \
             --force
         if: github.ref_name == matrix.branch
